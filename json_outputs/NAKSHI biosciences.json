@@ -1,0 +1,118 @@
+{
+  "institute_information": {
+    "institute_name": "INDIAN INSTITUTE OF TECHNOLOGY GANDHINAGAR",
+    "document_type": "Payment Voucher",
+    "voucher_status": {
+      "main": true,
+      "project": true,
+      "main_plus_project": true,
+      "imprest": false
+    },
+    "date": "03/12/2025",
+    "department_section": "Center For Creative Learning"
+  },
+  "general_details": {
+    "unique_reference_number": "P25-26/CCL/C0272/06923",
+    "invoice_no": "Multiple bills",
+    "invoice_date": "11/11/2025",
+    "name_of_the_supplier": "Nakshi Biosciences Private Ltd",
+    "payment_to_be_made_in_the_name_of": "Nakshi Biosciences Private Itd",
+    "purchase_type": "Indigenous"
+  },
+  "bill_details": {
+    "items_claimed": [
+      {
+        "sr_no": 1,
+        "type_of_stock": "Consumables (purchased separately)",
+        "subcategory_of_the_stock": "Chemicals",
+        "description": "Ferrric nitrate nonahydrate, Malonic acid, Maganese sulphate, Hydrogen peroxide solution",
+        "net_amount_inr": 1800.68,
+        "remarks": "Invoice Number: NBPL/24-25/114, 11/11/2025/ Nakshi Biosciences"
+      },
+      {
+        "sr_no": 2,
+        "type_of_stock": "Consumables (purchased separately)",
+        "subcategory_of_the_stock": "Chemicals",
+        "description": "Potassium lodate",
+        "net_amount_inr": 2094.75,
+        "remarks": "Invoice Number: NBPL/24-25/114, 11/11/2025/ Nakshi Biosciences"
+      },
+      {
+        "sr_no": 3,
+        "type_of_stock": "Consumables (purchased separately)",
+        "subcategory_of_the_stock": "Chemicals",
+        "description": "Sodium Hydroxide, Copper Sulphate Pentahydrate",
+        "net_amount_inr": 1787.7,
+        "remarks": "Invoice Number: NBPL/24-25/114, 11/11/2025/ Nakshi Biosciences"
+      },
+      {
+        "sr_no": 4,
+        "type_of_stock": "Consumables (purchased separately)",
+        "subcategory_of_the_stock": "Chemicals",
+        "description": "Sodium chloride",
+        "net_amount_inr": 397.5,
+        "remarks": "Invoice Number: NBPL/24-25/114, 11/11/2025/ Nakshi Biosciences"
+      }
+    ],
+    "amount_summary": {
+      "total_amount_inr": 6081.0,
+      "advance_taken_inr": 0.0,
+      "penalty_deducted_inr": 0.0,
+      "net_amount_payable_figure_inr": 6081.0,
+      "net_amount_payable_words_inr": "SIX THOUSAND EIGHTY ONE"
+    }
+  },
+  "project_fund_details": {
+    "project_no": "CON/CCL/12379",
+    "project_title": "PM Shri Kendriya Vidyalaya",
+    "balance_in_project": null,
+    "overhead_deducted": null,
+    "source_of_payment": {
+      "selected": "Project",
+      "options": [
+        "Institute",
+        "Department",
+        "CPDA",
+        "IP",
+        "RIG",
+        "Project",
+        "PDA",
+        "DPA",
+        "Endowment",
+        "Not Applicable"
+      ]
+    },
+    "head_of_expense": {
+      "selected": "Consumable",
+      "options": [
+        "Equipment",
+        "Consumable",
+        "Contingency",
+        "Others",
+        "Travel",
+        "Service heads",
+        "Not Applicable"
+      ]
+    }
+  },
+  "certifications": {
+    "initial_certification": [
+      "The details shown in the invoice/receipt has been verified & found correct",
+      "Material is received in good condition.",
+      "Equipment/item procured is installed & working satisfactorily"
+    ],
+    "procedure_and_stock_verification": [
+      "Material is entered in stock register as shown against it",
+      "The purchase procedure has been observed for the purchase/expense",
+      "The specification of material is verified & is as per required norms of the Institute"
+    ],
+    "personal_satisfaction_statement": "I am personally satisfied that these goods purchased are of requisite quality and specification and havebeen purchased from a reliable supplier at a reasonable price"
+  },
+  "approval_request": {
+    "requested_for_approval_of_amount": null,
+    "proposer_indenter": {
+      "name_and_empl_code": "Manish Jain - C0272",
+      "signature": null
+    }
+  }
+}

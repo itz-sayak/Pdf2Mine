@@ -1,0 +1,139 @@
+{
+  "institution": "INDIAN INSTITUTE OF TECHNOLOGY GANDHINAGAR",
+  "document_type": "Payment Voucher",
+  "voucher_metadata": {
+    "date": "29/10/2025",
+    "department_section": "Center For Creative Learning",
+    "unique_reference_number": "P25-26/CCL/C0272/05928",
+    "invoice_no": "Multiple Bills",
+    "invoice_date": "16/10/2025",
+    "supplier_name": "The Variety Book Depot",
+    "payment_to_be_made_in_the_name_of": "Jasmine Anandani",
+    "purchase_type": "Indigenous"
+  },
+  "categorization_of_expense": {
+    "source_of_payment": {
+      "selected": "Project",
+      "options": [
+        "Institute",
+        "Department",
+        "CPDA",
+        "IP",
+        "RIG",
+        "Project",
+        "PDA",
+        "DPA",
+        "Endowment",
+        "Not Applicable"
+      ]
+    },
+    "head_of_expense": {
+      "selected": "Consumable",
+      "options": [
+        "Equipment",
+        "Consumable",
+        "Contingency",
+        "Others",
+        "Travel",
+        "Service heads",
+        "Not Applicable"
+      ]
+    }
+  },
+  "bills_claimed_details": [
+    {
+      "sr_no": 1,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Hold Up the Sky (Book)",
+      "net_amount": 499.0,
+      "remarks": "Amazon.in, IN-5614,16.10.2025"
+    },
+    {
+      "sr_no": 2,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Chip War (Book)",
+      "net_amount": 1314.0,
+      "remarks": "Amazon.in, AMD2-3158142,16.10.2025"
+    },
+    {
+      "sr_no": 3,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "The Supernova Era (Book)",
+      "net_amount": 369.21,
+      "remarks": "Amazon.in, XGIO-299193,16.10.2025"
+    },
+    {
+      "sr_no": 4,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Courage To Be Disliked, The: How to free yourself, change your life and achieve real happiness (Book)",
+      "net_amount": 344.0,
+      "remarks": "Amazon.in, HYD8-5379115,7.10.2025"
+    },
+    {
+      "sr_no": 5,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Chip War (Book)",
+      "net_amount": 463.0,
+      "remarks": "Amazon.in, AMD2-2882616,7.10.2025"
+    },
+    {
+      "sr_no": 6,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Book (for Lab)",
+      "net_amount": 599.0,
+      "remarks": "Voucher, 36, 29.10.2025"
+    },
+    {
+      "sr_no": 7,
+      "type_of_stock": "Consumables (purchased separately)",
+      "subcategory_of_the_stock": "Stationery",
+      "description_item_name": "Bhaskaracarya's Siddhantasiromani (Vol 1&2) (Book)",
+      "net_amount": 2164.0,
+      "remarks": "Hindustan Book Agency, IN74750, 29.9.2025"
+    }
+  ],
+  "financial_summary": {
+    "total_amount_in_inr": 5752.0,
+    "advance_taken_in_inr": 0.0,
+    "penalty_deducted_in_inr": 0.0,
+    "net_amount_payable_figure_inr": 5752.0,
+    "net_amount_payable_words_inr": "FIVE THOUSAND SEVEN HUNDRED FIFTY TWO"
+  },
+  "project_fund_details": {
+    "details_table": [
+      {
+        "sr_no": 1,
+        "contents": "Project No",
+        "details": "PDA/MANISH.JAIN/11272"
+      },
+      {
+        "sr_no": 2,
+        "contents": "Project Title",
+        "details": "PDA/C0272"
+      }
+    ],
+    "balance_in_project": null,
+    "overhead_deducted": null
+  },
+  "certification": {
+    "verification_points": [
+      "The details shown in the invoice/receipt has been verified & found correct",
+      "Material is received in good condition.",
+      "Equipment/item procured is installed & working satisfactorily",
+      "Material is entered in stock register as shown against it",
+      "The purchase procedure has been observed for the purchase/expense",
+      "The specification of material is verified & is as per required norms of the Institute"
+    ],
+    "personal_declaration": "I am personally satisfied that these goods purchased are of requisite quality and specification and havebeen purchased from a reliable supplier at a reasonable price"
+  },
+  "approval_details": {
+    "requested_for_approval_of_amount": null,
+    "name_empl_code_indenter_proposer": "Manish Jain - C0272"
+  }
+}
