@@ -24,6 +24,8 @@ import shutil
 import argparse
 import subprocess
 from pathlib import Path
+from typing import Dict, Any, Union, List
+from datetime import datetime
 
 # Load environment variables from .env
 from dotenv import load_dotenv
@@ -32,6 +34,7 @@ load_dotenv()
 import gdown
 import google.generativeai as genai
 from openpyxl import Workbook
+import pandas as pd
 
 # ============================================================================
 # Configuration
@@ -43,10 +46,66 @@ JSON_OUTPUTS_DIR = SCRIPT_DIR / 'json_outputs'
 SAMPLE_PDF = SCRIPT_DIR / 'sample.pdf'
 
 PROMPT = """
-Extract all content from this PDF document and convert it into structured JSON format.
-Include all text, tables, and important information.
-Organize the data logically with appropriate keys and nested structures.
-Return ONLY valid JSON, no markdown formatting or additional text.
+Extract all information from this payment voucher document and return it in the following JSON structure. Ensure all fields are accurately extracted:
+
+{
+  "institute_details": {
+    "institute_name": "[Extract full institute name]",
+    "document_type": "[Extract document type, e.g., 'Payment Voucher']",
+    "payment_mode_options": ["[List all payment mode options if visible]"]
+    "payment_mode": ["One from the options that is ticked 'Main' or 'Project', 'Main + Project' or 'Imprest'"]
+  },
+  "voucher_details": {
+    "date": "[Extract voucher date in DD/MM/YYYY format]",
+    "department_section": "[Extract department or section name]",
+    "general_info": {
+      "unique_reference_number": "[Extract unique reference/voucher number]",
+      "invoice_no": "[Extract invoice number]",
+      "invoice_date": "[Extract invoice date in DD/MM/YYYY format]",
+      "name_of_the_supplier": "[Extract supplier name exactly as shown]",
+      "payment_to_be_made_in_the_name_of": "[Extract payee name]",
+      "purchase_type": "[Extract: 'Import' or 'Indigenous']"
+    }
+  },
+  "bill_details": {
+    "items_claimed": [
+      {
+        "sr_no": [Item serial number as integer],
+        "type_of_stock": "[Extract: 'Asset', 'Consumables (purchased separately)', 'Service', etc.]",
+        "subcategory_of_stock": "[Extract subcategory: 'Chemicals', 'Equipment', etc.]",
+        "item_description": "[Extract complete item description]",
+        "net_amount_inr": [Extract net amount as decimal number],
+        "remarks": "[Extract any remarks or notes for this item]"
+      }
+      // Repeat for each item in the bill
+    ]
+  },
+  "amount_summary": {
+    "total_amount_inr": [Extract total amount as decimal],
+    "advance_taken_inr": [Extract advance amount as decimal, use 0.0 if not applicable],
+    "penalty_deducted_inr": [Extract penalty amount as decimal, use 0.0 if not applicable],
+    "net_amount_payable_figure_inr": [Extract net payable amount as decimal],
+    "net_amount_payable_words": "[Extract amount in words in UPPERCASE]"
+  },
+  "project_fund_details": {
+    "project_no": "[Extract project number/code]",
+    "project_title": "[Extract project title]",
+    "balance_in_project": [Extract balance as decimal or null if not shown],
+    "overhead_deducted": [Extract overhead as decimal or null if not shown],
+    "source_of_payment_options": ["[List all source options if visible]"],
+    "source_of_payment": ["One from the options that is ticked 'Institute' or 'Department', 'CPDA' or 'IP' or 'RIG' or 'Project' or 'PDA' or 'DPA' or 'Endowment' or 'Not Applicable'"]
+    "head_of_expense_options": ["[List all expense head options if visible]"], 
+    "head_of_expense": ["One from the options that is ticked 'Equipment' or 'Consumable', 'Contingency' or 'Others' or 'Travel' or 'Service heads' or 'Not Applicable'"]
+    
+  }
+  
+}
+
+IMPORTANT EXTRACTION RULES:
+1. Extract ALL items from the bill_details section - create a separate object for each item
+2. Use null for fields that are not present or not filled
+3. Convert all numeric amounts to decimal numbers (not strings)
+4. Return ONLY valid JSON without any additional text or explanation
 """
 
 EXCEL_COLUMNS = [
@@ -387,71 +446,185 @@ def build_rows_from_parsed(parsed, source_pdf: str) -> list:
     return rows
 
 
-def aggregate_to_excel(json_dir: Path, output_xlsx: Path):
-    """Read all JSON files and aggregate into a single Excel workbook."""
-    print(f'\n[3/4] Aggregating JSON outputs to Excel...')
+def process_single_json(json_data: Dict[str, Any], source_pdf: str = "") -> List[Dict[str, Any]]:
+    """
+    Process a single JSON voucher and return rows for Excel.
     
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'combined'
-    ws.append(EXCEL_COLUMNS)
+    Args:
+        json_data: Dictionary containing payment voucher data
+        source_pdf: Name of source PDF file
+        
+    Returns:
+        List of row dictionaries
+    """
+    # Extract common fields from JSON
+    voucher = json_data.get('voucher_details', {})
+    general = voucher.get('general_info', {})
+    bill = json_data.get('bill_details', {})
+    amount = json_data.get('amount_summary', {})
+    project = json_data.get('project_fund_details', {})
     
-    json_files = sorted(json_dir.glob('*.json'))
-    if not json_files:
-        print('No JSON files found to aggregate.')
+    # Get items list
+    items = bill.get('items_claimed', [])
+    
+    # Get current timestamp for conversion date
+    conversion_date = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    
+    # Create rows for Excel - one row per item
+    rows = []
+    
+    for item in items:
+        row = {
+            'Date': conversion_date,
+            'Source PDF': source_pdf,
+            'Unique Reference Number': general.get('unique_reference_number', ''),
+            'Invoice No.': general.get('invoice_no', ''),
+            'Invoice Date': general.get('invoice_date', ''),
+            'Name of the Supplier': general.get('name_of_the_supplier', ''),
+            'Payment to be made in the name of': general.get('payment_to_be_made_in_the_name_of', ''),
+            'Purchase Type (Import/Indigenous)': general.get('purchase_type', ''),
+            'Type of Stock (Asset/Cons./Service)': item.get('type_of_stock', ''),
+            'Subcategory of the stock': item.get('subcategory_of_stock', ''),
+            'Description of the Item (Item Name)': item.get('item_description', ''),
+            'Net Amount': item.get('net_amount_inr', 0),
+            'Remarks': item.get('remarks', ''),
+            'Total Amount (INR)': amount.get('total_amount_inr', 0),
+            'Advance taken (if any) in INR': amount.get('advance_taken_inr', 0),
+            'Less: Penalty Deducted in INR': amount.get('penalty_deducted_inr', 0),
+            'Net Amount Payable (figure) INR': amount.get('net_amount_payable_figure_inr', 0),
+            'Net Amount Payable (words) INR': amount.get('net_amount_payable_words', ''),
+            'Project No': project.get('project_no', ''),
+            'Project Title': project.get('project_title', ''),
+            'Balance in Project': project.get('balance_in_project', ''),
+            'Overhead Deducted': project.get('overhead_deducted', ''),
+            'Source of payment': project.get('source_of_payment', ''),
+            'Head of expense': project.get('head_of_expense', '')
+        }
+        rows.append(row)
+    
+    return rows
+
+
+def aggregate_to_excel(json_input: Union[str, Path, Dict[str, Any]], output_file: str, source_pdf: str = "", append_mode: bool = True) -> None:
+    """
+    Convert payment voucher JSON data to Excel format.
+    Can handle single JSON dict, single JSON file, or directory of JSON files.
+    
+    Args:
+        json_input: Can be:
+            - Dictionary: Single JSON data
+            - String/Path to file: Single JSON file
+            - String/Path to directory: Directory containing JSON files
+        output_file: Path to output Excel file
+        source_pdf: Name of source PDF file (only used for single dict input)
+        append_mode: If True, append to existing Excel file; if False, create new file
+    """
+    all_rows = []
+    
+    # Handle different input types
+    if isinstance(json_input, dict):
+        # Direct JSON dictionary
+        all_rows.extend(process_single_json(json_input, source_pdf))
+        
+    elif isinstance(json_input, (str, Path)):
+        json_path = Path(json_input)
+        
+        if json_path.is_file():
+            # Single JSON file
+            with open(json_path, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+            source_name = json_path.stem + '.pdf'
+            all_rows.extend(process_single_json(json_data, source_name))
+            
+        elif json_path.is_dir():
+            # Directory of JSON files
+            json_files = sorted(json_path.glob('*.json'))
+            
+            if not json_files:
+                print(f"No JSON files found in {json_path}")
+                return
+            
+            print(f"Processing {len(json_files)} JSON file(s)...")
+            
+            for json_file in json_files:
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        json_data = json.load(f)
+                    
+                    # Use JSON filename (without .json) as source PDF name
+                    source_name = json_file.stem + '.pdf'
+                    rows = process_single_json(json_data, source_name)
+                    all_rows.extend(rows)
+                    print(f"  ✓ Processed: {json_file.name} ({len(rows)} rows)")
+                    
+                except Exception as e:
+                    print(f"  ✗ Error processing {json_file.name}: {str(e)}")
+                    continue
+        else:
+            raise ValueError(f"Path does not exist: {json_path}")
+    else:
+        raise TypeError(f"Invalid input type: {type(json_input)}")
+    
+    if not all_rows:
+        print("No data to write to Excel")
         return
     
-    total_rows = 0
-    for fp in json_files:
-        name = fp.stem
-        print(f'  Reading: {fp.name}')
-        
+    # Create DataFrame from new data
+    new_df = pd.DataFrame(all_rows, columns=EXCEL_COLUMNS)
+    
+    # Check if we should append to existing file
+    output_path = Path(output_file)
+    
+    if append_mode and output_path.exists():
         try:
-            text = fp.read_text(encoding='utf-8')
-            try:
-                parsed = json.loads(text)
-            except Exception:
-                parsed = text
+            # Read existing Excel file
+            existing_df = pd.read_excel(output_path, engine='openpyxl')
             
-            rows = build_rows_from_parsed(parsed, name)
-            for r in rows:
-                # Sanitize dict/list cells
-                sanitized = []
-                for v in r:
-                    if isinstance(v, dict):
-                        # If dict has 'selected' key, extract that instead
-                        if 'selected' in v:
-                            sanitized.append(v['selected'])
-                        else:
-                            try:
-                                sanitized.append(json.dumps(v, ensure_ascii=False))
-                            except Exception:
-                                sanitized.append(str(v))
-                    elif isinstance(v, list):
-                        try:
-                            sanitized.append(json.dumps(v, ensure_ascii=False))
-                        except Exception:
-                            sanitized.append(str(v))
-                    else:
-                        sanitized.append(v)
-                ws.append(sanitized)
-                total_rows += 1
+            # Check for duplicate entries based on Unique Reference Number and Item Description
+            # to avoid adding the same voucher items twice
+            merge_cols = ['Unique Reference Number', 'Description of the Item (Item Name)']
+            
+            # Identify duplicates
+            merged = new_df.merge(
+                existing_df[merge_cols], 
+                on=merge_cols, 
+                how='left', 
+                indicator=True
+            )
+            
+            # Keep only new records (not duplicates)
+            new_records = new_df[merged['_merge'] == 'left_only']
+            
+            if len(new_records) == 0:
+                print(f"\n⚠ No new records to add (all {len(new_df)} records already exist)")
+                return
+            
+            # Append new records to existing data
+            final_df = pd.concat([existing_df, new_records], ignore_index=True)
+            
+            print(f"\n📊 Append Mode:")
+            print(f"  Existing rows: {len(existing_df)}")
+            print(f"  New rows added: {len(new_records)}")
+            print(f"  Duplicate rows skipped: {len(new_df) - len(new_records)}")
+            print(f"  Total rows: {len(final_df)}")
+            
         except Exception as e:
-            print(f'  Error reading {fp.name}: {e}')
+            print(f"\n⚠ Error reading existing file: {str(e)}")
+            print("  Creating new file instead...")
+            final_df = new_df
+    else:
+        final_df = new_df
+        if append_mode:
+            print("\n📝 File doesn't exist, creating new file...")
     
-    # Adjust column widths
-    for col in ws.columns:
-        max_length = 0
-        col_letter = col[0].column_letter
-        for cell in col:
-            if cell.value:
-                length = len(str(cell.value))
-                if length > max_length:
-                    max_length = length
-        ws.column_dimensions[col_letter].width = min(50, max(10, max_length + 2))
+    # Write to Excel
+    final_df.to_excel(output_file, index=False, engine='openpyxl')
     
-    wb.save(output_xlsx)
-    print(f'\n[4/4] ✓ Saved: {output_xlsx} ({total_rows} data rows)')
+    if not append_mode:
+        print(f"\n✓ Excel file created successfully: {output_file}")
+        print(f"  Total rows: {len(all_rows)}")
+        print(f"  Unique vouchers: {final_df['Unique Reference Number'].nunique()}")
+
 
 
 def main():
