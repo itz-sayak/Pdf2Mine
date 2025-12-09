@@ -6,8 +6,8 @@ Usage:
     python pipeline.py --drive-folder <FOLDER_ID_OR_URL> --output combined_output.xlsx
 
 Example:
-    python pipeline.py --drive-folder 1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg --output combined_output.xlsx
-    python pipeline.py --drive-folder "https://drive.google.com/drive/folders/1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output combined_output.xlsx
+    python pipeline.py --drive-folder <FOLDER_ID> --output combined_output.xlsx
+    python pipeline.py --drive-folder "<URL>" --output combined_output.xlsx
 
 Requirements:
     - Google Drive folder must be publicly shared (Anyone with the link → Viewer)
