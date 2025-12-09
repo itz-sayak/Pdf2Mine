@@ -66,7 +66,7 @@ This pipeline processes payment voucher PDFs and extracts key information into a
 
 Process PDFs from a Google Drive folder:
 ```powershell
-python pipeline.py --drive-folder "1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output combined_output.xlsx
+python pipeline.py --drive-folder "Drive_folder_id(in the link)" --output combined_output.xlsx
 ```
 
 ### Command-Line Options
@@ -82,22 +82,22 @@ python pipeline.py --drive-folder "1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output c
 
 **Full pipeline** (download + extract + aggregate):
 ```powershell
-python pipeline.py --drive-folder "1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output output.xlsx
+python pipeline.py --drive-folder "Drive_folder_id(in the link)" --output output.xlsx
 ```
 
 **Skip download** (use existing PDFs):
 ```powershell
-python pipeline.py --drive-folder "1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output output.xlsx --skip-download
+python pipeline.py --drive-folder "Drive_folder_id(in the link)" --output output.xlsx --skip-download
 ```
 
 **Skip extraction** (use existing JSONs, useful when quota exhausted):
 ```powershell
-python pipeline.py --drive-folder "1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output output.xlsx --skip-download --skip-extract
+python pipeline.py --drive-folder "Drive_folder_id(in the link)" --output output.xlsx --skip-download --skip-extract
 ```
 
 **Use Drive folder URL** (instead of ID):
 ```powershell
-python pipeline.py --drive-folder "https://drive.google.com/drive/folders/1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg" --output output.xlsx
+python pipeline.py --drive-folder "driver link" --output output.xlsx
 ```
 
 ## 📊 Excel Output Format
