@@ -148,7 +148,7 @@ For the pipeline to download PDFs automatically:
 3. Set access to **"Anyone with the link"** with **Viewer** permissions
 4. Copy the folder ID from the URL:
    ```
-   https://drive.google.com/drive/folders/1MxnSyb-XFciLXuJ95Z-Stuyj1hrh15yg
+   https://drive.google.com/drive/folders/###########################
                                             ↑ This is the folder ID
    ```
 
