@@ -36,6 +36,13 @@ import google.generativeai as genai
 from openpyxl import Workbook
 import pandas as pd
 
+import io
+import pickle
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Union, List
+import hashlib
+
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -44,6 +51,8 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 REMOTE_PDFS_DIR = SCRIPT_DIR / 'remote_pdfs'
 JSON_OUTPUTS_DIR = SCRIPT_DIR / 'json_outputs'
 SAMPLE_PDF = SCRIPT_DIR / 'sample.pdf'
+PROCESSED_FILES_DB = Path("processed_files.json")
+
 
 PROMPT = """
 Extract all information from this payment voucher document and return it in the following JSON structure. Ensure all fields are accurately extracted:
@@ -109,6 +118,7 @@ IMPORTANT EXTRACTION RULES:
 """
 
 EXCEL_COLUMNS = [
+    'Date',
     'Source PDF',
     'Unique Reference Number',
     'Invoice No.',
@@ -137,6 +147,139 @@ EXCEL_COLUMNS = [
 # ============================================================================
 # Helper Functions
 # ============================================================================
+#-------------------------------------------------------
+
+def get_file_hash(filepath: Path) -> str:
+    """Generate unique hash for file content."""
+    hash_md5 = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def load_processed_files() -> Dict[str, dict]:
+    """Load the database of processed files."""
+    if not PROCESSED_FILES_DB.exists():
+        return {}
+    
+    try:
+        with open(PROCESSED_FILES_DB, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Warning: Could not load processed files database: {e}")
+        return {}
+
+def save_processed_files(processed: Dict[str, dict]):
+    """Save the database of processed files."""
+    try:
+        with open(PROCESSED_FILES_DB, 'w') as f:
+            json.dump(processed, f, indent=2)
+    except Exception as e:
+        print(f"Warning: Could not save processed files database: {e}")
+
+
+def mark_file_as_processed(filepath: Path, file_hash: str):
+    """Mark a file as processed."""
+    from datetime import datetime
+    
+    processed = load_processed_files()
+    processed[file_hash] = {
+        'filename': filepath.name,
+        'processed_date': datetime.now().isoformat(),
+        'file_path': str(filepath)
+    }
+    save_processed_files(processed)
+
+def is_file_processed(file_hash: str) -> bool:
+    """Check if a file has been processed."""
+    processed = load_processed_files()
+    return file_hash in processed
+
+
+
+def get_unprocessed_files(pdf_files: List[Path]) -> List[Path]:
+    """
+    Filter list of PDF files to only include unprocessed ones.
+    
+    Args:
+        pdf_files: List of PDF file paths
+        
+    Returns:
+        List of unprocessed PDF file paths
+    """
+    unprocessed = []
+    processed_db = load_processed_files()
+    
+    print(f"\nChecking {len(pdf_files)} file(s) against processed database...")
+    
+    for pdf_file in pdf_files:
+        file_hash = get_file_hash(pdf_file)
+        
+        if file_hash in processed_db:
+            prev_processed = processed_db[file_hash]
+            print(f"  ⊗ SKIP: {pdf_file.name} (already processed on {prev_processed['processed_date'][:10]})")
+        else:
+            print(f"  ✓ NEW:  {pdf_file.name}")
+            unprocessed.append(pdf_file)
+    
+    print(f"\nSummary:")
+    print(f"  Total files: {len(pdf_files)}")
+    print(f"  Already processed: {len(pdf_files) - len(unprocessed)}")
+    print(f"  New to process: {len(unprocessed)}")
+    
+    return unprocessed
+
+
+def list_processed_files():
+    """Display all processed files."""
+    processed = load_processed_files()
+    
+    if not processed:
+        print("\nNo files have been processed yet.")
+        return
+    
+    print(f"\n{'='*70}")
+    print(f"PROCESSED FILES DATABASE ({len(processed)} files)")
+    print(f"{'='*70}\n")
+    
+    for file_hash, info in sorted(processed.items(), key=lambda x: x[1]['processed_date'], reverse=True):
+        print(f"📄 {info['filename']}")
+        print(f"   Processed: {info['processed_date'][:19]}")
+        print(f"   Hash: {file_hash[:16]}...")
+        print()
+
+
+def reset_processed_files():
+    """Clear the processed files database."""
+    if PROCESSED_FILES_DB.exists():
+        PROCESSED_FILES_DB.unlink()
+        print("✓ Processed files database cleared.")
+    else:
+        print("No database to clear.")
+
+
+def remove_file_from_processed(filename: str):
+    """Remove a specific file from processed database by filename."""
+    processed = load_processed_files()
+    
+    found = []
+    for file_hash, info in processed.items():
+        if info['filename'] == filename:
+            found.append(file_hash)
+    
+    if not found:
+        print(f"File '{filename}' not found in processed database.")
+        return
+    
+    for file_hash in found:
+        del processed[file_hash]
+        print(f"✓ Removed: {filename}")
+    
+    save_processed_files(processed)
+
+
+#--------------------------------------------------------
 
 def extract_folder_id(folder_input: str) -> str:
     """Extract folder ID from URL or return as-is if already an ID."""
@@ -146,18 +289,24 @@ def extract_folder_id(folder_input: str) -> str:
     # Assume it's already a folder ID
     return folder_input.strip()
 
-
 def download_pdfs_from_drive(folder_id: str, output_dir: Path) -> list:
-    """Download all files from a public Google Drive folder using gdown."""
-    output_dir.mkdir(exist_ok=True)
+    """
+    Download ALL files from Drive folder (no date filtering).
+    This replaces the download_pdfs_from_drive function.
+    """
     
-    # Clean previous downloads
-    for f in output_dir.glob('*'):
-        if f.is_file():
-            f.unlink()
+    output_dir.mkdir(exist_ok=True)
+
+    # Existing PDFs in remote_pdfs
+    # existing_names = {p.name for p in output_dir.glob("*.pdf")}
+    
+    # # Clean previous downloads
+    # for f in output_dir.glob('*'):
+    #     if f.is_file():
+    #         f.unlink()
     
     url = f'https://drive.google.com/drive/folders/{folder_id}'
-    print(f'\n[1/4] Downloading PDFs from Google Drive folder: {url}')
+    print(f'\n[1/4] Downloading ALL PDFs from Google Drive folder: {url}')
     
     try:
         gdown.download_folder(url, output=str(output_dir), quiet=False)
@@ -166,8 +315,22 @@ def download_pdfs_from_drive(folder_id: str, output_dir: Path) -> list:
         return []
     
     pdf_files = sorted(output_dir.glob('*.pdf'))
-    print(f'Downloaded {len(pdf_files)} PDF(s): {[f.name for f in pdf_files]}')
-    return pdf_files
+    print(f'Downloaded {len(pdf_files)} PDF(s)')
+    
+    # Filter to only unprocessed files
+    unprocessed_files = get_unprocessed_files(pdf_files)
+    
+    return unprocessed_files
+
+#------------------------------------------------
+
+def extract_folder_id(folder_input: str) -> str:
+    """Extract folder ID from URL or return as-is if already an ID."""
+    match = re.search(r'folders/([A-Za-z0-9_-]+)', folder_input)
+    if match:
+        return match.group(1)
+    # Assume it's already a folder ID
+    return folder_input.strip()
 
 
 def extract_text_from_response(response):
@@ -278,6 +441,8 @@ def process_all_pdfs(pdf_files: list, output_dir: Path) -> list:
             
             print(f'  ✓ Saved: {json_path.name}')
             results.append((basename, parsed, None))
+            file_hash = get_file_hash(pdf_path)
+            mark_file_as_processed(pdf_path, file_hash)
             
         except Exception as e:
             print(f'  ✗ Error processing {pdf_path.name}: {e}')
@@ -467,15 +632,15 @@ def process_single_json(json_data: Dict[str, Any], source_pdf: str = "") -> List
     # Get items list
     items = bill.get('items_claimed', [])
     
-    # Get current timestamp for conversion date
-    conversion_date = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    # Get current date for Date field
+    current_date = datetime.now().strftime('%d/%m/%Y')
     
     # Create rows for Excel - one row per item
     rows = []
     
     for item in items:
         row = {
-            'Date': conversion_date,
+            'Date': current_date,
             'Source PDF': source_pdf,
             'Unique Reference Number': general.get('unique_reference_number', ''),
             'Invoice No.': general.get('invoice_no', ''),
@@ -505,7 +670,7 @@ def process_single_json(json_data: Dict[str, Any], source_pdf: str = "") -> List
     return rows
 
 
-def aggregate_to_excel(json_input: Union[str, Path, Dict[str, Any]], output_file: str, source_pdf: str = "", append_mode: bool = True) -> None:
+def aggregate_to_excel(json_input: Union[str, Path, Dict[str, Any]], output_file: str, source_pdf: str = "", append_mode: bool = False) -> None:
     """
     Convert payment voucher JSON data to Excel format.
     Can handle single JSON dict, single JSON file, or directory of JSON files.
@@ -651,6 +816,12 @@ def main():
         action='store_true',
         help='Skip extraction step (use existing JSONs in json_outputs/)'
     )
+    parser.add_argument(
+        '--append',
+        action='store_true',
+        help='Append to existing Excel file instead of overwriting'
+    )
+
     args = parser.parse_args()
     
     print('=' * 60)
@@ -663,7 +834,10 @@ def main():
         pdf_files = sorted(REMOTE_PDFS_DIR.glob('*.pdf'))
     else:
         folder_id = extract_folder_id(args.drive_folder)
-        pdf_files = download_pdfs_from_drive(folder_id, REMOTE_PDFS_DIR)
+    pdf_files = download_pdfs_from_drive(
+        folder_id, 
+        REMOTE_PDFS_DIR
+    )
     
     if not pdf_files:
         print('No PDF files found. Exiting.')
@@ -677,7 +851,11 @@ def main():
     
     # Step 3 & 4: Aggregate to Excel
     output_path = SCRIPT_DIR / args.output
-    aggregate_to_excel(JSON_OUTPUTS_DIR, output_path)
+    aggregate_to_excel(
+        JSON_OUTPUTS_DIR, 
+        output_path,
+        append_mode=args.append  # Add this parameter
+    )
     
     print('\n' + '=' * 60)
     print('Pipeline completed successfully!')
