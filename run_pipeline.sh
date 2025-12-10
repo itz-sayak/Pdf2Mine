@@ -10,7 +10,7 @@
 PYTHON_PATH="/usr/bin/python3"
 
 # Full path to the directory containing pipeline.py
-PROJECT_DIR="/home/user/Pdf2Mine-main/Pdf2Mine-main"
+PROJECT_DIR="PROJECT_DIR"
 
 # Google Drive folder ID (extract from your Drive folder URL)
 DRIVE_FOLDER_ID="your_drive_folder_id_here"
